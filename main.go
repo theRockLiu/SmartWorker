@@ -147,3 +147,44 @@ func SendFramedResponse(w io.Writer, frameType int32, data []byte) (int, error) 
 	n, err = w.Write(data)
 	return n + 8, err
 }
+
+func readMPUB(r io.Reader, tmp []byte, idChan chan MessageID, maxMessageSize int64) ([]*Message, error) {
+	numMessages, err := readLen(r, tmp)
+	if err != nil {
+		return nil, util.NewFatalClientErr(err, "E_BAD_BODY", "MPUB failed to read message count")
+	}
+
+	if numMessages <= 0 {
+		return nil, util.NewFatalClientErr(err, "E_BAD_BODY",
+			fmt.Sprintf("MPUB invalid message count %d", numMessages))
+	}
+
+	messages := make([]*Message, 0, numMessages)
+	for i := int32(0); i < numMessages; i++ {
+		messageSize, err := readLen(r, tmp)
+		if err != nil {
+			return nil, util.NewFatalClientErr(err, "E_BAD_MESSAGE",
+				fmt.Sprintf("MPUB failed to read message(%d) body size", i))
+		}
+
+		if messageSize <= 0 {
+			return nil, util.NewFatalClientErr(nil, "E_BAD_MESSAGE",
+				fmt.Sprintf("MPUB invalid message(%d) body size %d", i, messageSize))
+		}
+
+		if int64(messageSize) > maxMessageSize {
+			return nil, util.NewFatalClientErr(nil, "E_BAD_MESSAGE",
+				fmt.Sprintf("MPUB message too big %d > %d", messageSize, maxMessageSize))
+		}
+
+		msgBody := make([]byte, messageSize)
+		_, err = io.ReadFull(r, msgBody)
+		if err != nil {
+			return nil, util.NewFatalClientErr(err, "E_BAD_MESSAGE", "MPUB failed to read message body")
+		}
+
+		messages = append(messages, NewMessage(<-idChan, msgBody))
+	}
+
+	return messages, nil
+}
