@@ -15,16 +15,6 @@ type IBaseHandler interface {
 	HandleMsg(*net.Conn, uint32) error
 }
 
-type SMyHandler struct {
-	i int
-}
-
-func (this SMyHandler) HandleMsg(conn *net.Conn, ui32BodyLen uint32) error {
-	log.Println("SMyHandler HandleMsg: ", ui32BodyLen)
-
-	return nil
-}
-
 var mapIdVsHandler map[uint16]IBaseHandler
 
 type SMsgHeader struct {
