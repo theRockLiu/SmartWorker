@@ -2,6 +2,7 @@
 package main
 
 import (
+	"SmartWorker/myproto"
 	"encoding/binary"
 	"io"
 	"log"
@@ -19,8 +20,6 @@ var mapIdVsHandler map[uint16]IBaseHandler
 
 type SMsgHeader struct {
 	len uint32
-	id  uint16
-	res uint16
 }
 
 var smh SMsgHeader
@@ -33,7 +32,7 @@ const (
 
 func init() {
 	mapIdVsHandler = make(map[uint16]IBaseHandler)
-	mapIdVsHandler[CONST_MSG_ID_MYTEST] = *(new(SMyHandler))
+	mapIdVsHandler[CONST_MSG_ID_MYTEST] = *(new(myproto.SMyHandler))
 }
 
 func main() {
@@ -47,6 +46,9 @@ func main() {
 	//go HttpService(string("0.0.0.0:8888"))
 
 	//waiting...
+
+	ch := make(chan int, 1)
+	<-ch
 }
 
 func TcpService(strListenAddr string) {
@@ -109,7 +111,7 @@ func HandleSession(clientConn net.Conn) {
 
 		msgHdr := (*SMsgHeader)(unsafe.Pointer(&bytesReadBuf))
 
-		if handler, OK := mapIdVsHandler[msgHdr.id]; OK {
+		if handler, OK := mapIdVsHandler[CONST_MSG_ID_MYTEST]; OK {
 			handler.HandleMsg(&clientConn, msgHdr.len)
 
 		} else {
