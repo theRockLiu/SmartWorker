@@ -12,24 +12,6 @@ import (
 	"unsafe"
 )
 
-type IBaseHandler interface {
-	HandleMsg(*net.Conn, uint32) error
-}
-
-var mapIdVsHandler map[uint16]IBaseHandler
-
-type SMsgHeader struct {
-	len uint32
-}
-
-var smh SMsgHeader
-
-const CONST_MSG_HEADER_LEN = unsafe.Sizeof(smh)
-
-const (
-	CONST_MSG_ID_MYTEST = 1
-)
-
 func init() {
 	mapIdVsHandler = make(map[uint16]IBaseHandler)
 	mapIdVsHandler[CONST_MSG_ID_MYTEST] = *(new(myproto.SMyHandler))
@@ -102,8 +84,8 @@ func HandleSession(clientConn net.Conn) {
 		// The client should initialize itself by sending a 4 byte sequence indicating
 		// the version of the protocol that it intends to communicate, this will allow us
 		// to gracefully upgrade the protocol away from text/line oriented to whatever...
-		bytesReadBuf := make([]byte, CONST_MSG_HEADER_LEN)
-		_, err := io.ReadFull(clientConn, bytesReadBuf)
+		var bytesReadBuf [CONST_MSG_HEADER_LEN]byte
+		_, err := io.ReadFull(clientConn, bytesReadBuf[:])
 		if err != nil {
 			log.Printf("ERROR: failed to read protocol version - %s", err.Error())
 			return
@@ -111,8 +93,8 @@ func HandleSession(clientConn net.Conn) {
 
 		msgHdr := (*SMsgHeader)(unsafe.Pointer(&bytesReadBuf))
 
-		if handler, OK := mapIdVsHandler[CONST_MSG_ID_MYTEST]; OK {
-			handler.HandleMsg(&clientConn, msgHdr.len)
+		if handler, OK := mapIdVsHandler[msgHdr.opcode]; OK {
+			handler.HandleMsg(&clientConn, msgHdr.msglen)
 
 		} else {
 			log.Fatalln("bad error!")
