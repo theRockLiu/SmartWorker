@@ -2,11 +2,13 @@
 package SwProto
 
 import (
+	"SmartWorker/msgs"
 	proto "code.google.com/p/goprotobuf/proto"
-	"fmt"
+	//	"fmt"
 	"io"
 	"log"
 	"net"
+	"unsafe"
 )
 
 type IBaseHandler interface {
@@ -14,14 +16,14 @@ type IBaseHandler interface {
 }
 
 type SGlobalObj struct {
-	mapIdVsHandler map[uint16]IBaseHandler
+	MapIdVsHandler map[uint16]IBaseHandler
 }
 
-var gSGlobalObj SGlobalObj
+var GSGlobalObj SGlobalObj
 
 type SMsgHeader struct {
-	ui32MsgLen uint32
-	ui16Opcode uint16
+	Ui32MsgLen uint32
+	Ui16Opcode uint16
 }
 
 var tmptmptmptmp SMsgHeader
@@ -50,7 +52,7 @@ func (this SRegHandler) HandleMsg(conn *net.Conn, ui32BodyLen uint32) error {
 		return err
 	}
 
-	regreq := &RegReq{}
+	regreq := &msgs.Regreq{}
 	//myPerson := &proto.Person{}
 	err = proto.Unmarshal(bytesReadBuf, regreq)
 	if err != nil {
@@ -58,7 +60,7 @@ func (this SRegHandler) HandleMsg(conn *net.Conn, ui32BodyLen uint32) error {
 		return err
 	}
 
-	fmt.Println(regreq.GetLabel(), regreq.GetType())
+	//fmt.Println(regreq.GetLabel(), regreq.GetType())
 
 	return nil
 }
@@ -67,18 +69,25 @@ type SSetNameHandler struct {
 }
 
 func (this SSetNameHandler) HandleMsg(conn *net.Conn, ui32BodyLen uint32) error {
+	log.Println("handling set name msg")
 
+	return nil
 }
 
 type SGetNameHandler struct {
 }
 
 func (this SGetNameHandler) HandleMsg(conn *net.Conn, ui32BodyLen uint32) error {
+	log.Println("handliing get name msg")
 
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 func init() {
-	gSGlobalObj.mapIdVsHandler[CST_MSGID_REG] = SRegHandler{}
+	GSGlobalObj.MapIdVsHandler = make(map[uint16]IBaseHandler)
+	GSGlobalObj.MapIdVsHandler[CST_MSGID_REG] = SRegHandler{}
+	GSGlobalObj.MapIdVsHandler[CST_MSGID_SET_NAME] = SSetNameHandler{}
+	GSGlobalObj.MapIdVsHandler[CST_MSGID_GET_NAME] = SGetNameHandler{}
 
 }

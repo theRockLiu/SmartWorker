@@ -2,7 +2,7 @@
 package main
 
 import (
-	"SmartWorker/myproto"
+	"SmartWorker/SwProto"
 	"encoding/binary"
 	"io"
 	"log"
@@ -12,20 +12,14 @@ import (
 	"unsafe"
 )
 
-func init() {
-	mapIdVsHandler = make(map[uint16]IBaseHandler)
-	mapIdVsHandler[CONST_MSG_ID_MYTEST] = *(new(myproto.SMyHandler))
-}
+//func init() {
+//	mapIdVsHandler = make(map[uint16]IBaseHandler)
+//	mapIdVsHandler[CONST_MSG_ID_MYTEST] = *(new(myproto.SMyHandler))
+//}
 
 func main() {
 
 	go TcpService(string("0.0.0.0:9999"))
-
-	//httpListener, err = net.Listen("tcp", strHttpListenAddr)
-	//if err != nil {
-	//	log.Fatalf("FATAL: listen (%s) failed - %s", n.httpAddr, err.Error())
-	//}
-	//go HttpService(string("0.0.0.0:8888"))
 
 	//waiting...
 
@@ -84,17 +78,17 @@ func HandleSession(clientConn net.Conn) {
 		// The client should initialize itself by sending a 4 byte sequence indicating
 		// the version of the protocol that it intends to communicate, this will allow us
 		// to gracefully upgrade the protocol away from text/line oriented to whatever...
-		var bytesReadBuf [CONST_MSG_HEADER_LEN]byte
+		var bytesReadBuf [SwProto.CONST_MSG_HEADER_LEN]byte
 		_, err := io.ReadFull(clientConn, bytesReadBuf[:])
 		if err != nil {
 			log.Printf("ERROR: failed to read protocol version - %s", err.Error())
 			return
 		}
 
-		msgHdr := (*SMsgHeader)(unsafe.Pointer(&bytesReadBuf))
+		msgHdr := (*SwProto.SMsgHeader)(unsafe.Pointer(&bytesReadBuf))
 
-		if handler, OK := mapIdVsHandler[msgHdr.opcode]; OK {
-			handler.HandleMsg(&clientConn, msgHdr.msglen)
+		if handler, OK := SwProto.GSGlobalObj.MapIdVsHandler[msgHdr.Ui16Opcode]; OK {
+			handler.HandleMsg(&clientConn, msgHdr.Ui32MsgLen)
 
 		} else {
 			log.Fatalln("bad error!")
